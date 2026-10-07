@@ -1,4 +1,4 @@
-# claude-mods
+# claude-sidebar-mod
 
 A Claude Code plugin marketplace with one mod, **sidebar**: a pane docked beside the transcript that shows the session's model, usage, workspace, CI and tasks. It replaces a multi-line status line, so the prompt box stays in one place.
 
@@ -9,7 +9,7 @@ It's built on Claude Code's function-hooks plugin API, which is early access and
 At a Claude Code prompt:
 
 ```
-/plugin install sidebar --marketplace <owner>/<repo>
+/plugin install sidebar --marketplace pthexton/claude-sidebar-mod
 ```
 
 Answer `y` to add the marketplace, then pick a scope (user scope loads it in every session).
@@ -17,7 +17,8 @@ Answer `y` to add the marketplace, then pick a scope (user scope loads it in eve
 From a local clone instead:
 
 ```
-claude plugin marketplace add /path/to/claude-mods
+git clone https://github.com/pthexton/claude-sidebar-mod.git
+claude plugin marketplace add /path/to/claude-sidebar-mod
 claude plugin install sidebar@pt-mods --scope user
 ```
 
@@ -53,7 +54,7 @@ Mods can't read some of what Claude Code gives a status line command. `sidebar/s
 
 ```json
 {
-  "statusLine": { "type": "command", "command": "/path/to/claude-mods/sidebar/statusline-feed.sh" }
+  "statusLine": { "type": "command", "command": "/path/to/claude-sidebar-mod/sidebar/statusline-feed.sh" }
 }
 ```
 

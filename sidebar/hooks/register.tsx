@@ -18,6 +18,7 @@ import {
   applyTaskUpdate,
   applyTodoWrite,
   isTaskDim,
+  parseStatusOutput,
   taskColor,
   taskIcon,
 } from './tasks'
@@ -39,6 +40,8 @@ const apiMs = atom({ plugin: 'sidebar', key: 'apiMs' } as const, 0)
 const workspace = atom({ plugin: 'sidebar', key: 'workspace' } as const, null)
 const now = atom({ plugin: 'sidebar', key: 'now' } as const, 0)
 const pricing = atom({ plugin: 'sidebar', key: 'pricing' } as const, [])
+const todoTasks = atom({ plugin: 'sidebar', key: 'todoTasks' } as const, [])
+const todoElsewhere = atom({ plugin: 'sidebar', key: 'todoElsewhere' } as const, 0)
 const claudeTasks = atom({ plugin: 'sidebar', key: 'claudeTasks' } as const, [])
 const ci = atom({ plugin: 'sidebar', key: 'ci' } as const, null)
 const isCiFetching = atom({ plugin: 'sidebar', key: 'isCiFetching' } as const, false)
@@ -56,6 +59,14 @@ const CI_TICK_MS = 15_000
 // can't be bound: the keybinding matcher has no names for them.
 const CMD_CI_REFRESH = 'ci-refresh'
 const CMD_OPEN_PR = 'open-pr'
+
+const TODO_BIN = '/Users/pthexton/Developer/swift/SwiftTodoManager/.build/release/SwiftTodoManager'
+const TODO_TOOL_PREFIX = 'mcp__swift-todo-manager__'
+// Outside a git checkout the todo manager needs a branch for the scope; agents
+// working in such folders here pass "none".
+const NON_GIT_BRANCH = 'none'
+// Picks up changes other sessions or agents make to the same scope.
+const TODO_POLL_MS = 30_000
 
 // Per-model prices, optional (format in README.md). Missing or unreadable
 // means the cache chip shows the rebuild size in tokens and no dollar cost.
@@ -107,10 +118,33 @@ const refreshWorkspace = async ($: EngineInterface) => {
     isWorktree = gitDir !== undefined && commonDir !== undefined && gitDir !== commonDir
   }
   const repoName = repo === null ? undefined : repo.root.split('/').at(-1)
-  const ws: Workspace = { sessionId, model, cwd, root, branch, commitSha, isWorktree, repoName, isGit: repo !== null, home }
+  const projectKey = repoName ?? cwd.split('/').at(-1) ?? cwd
+  const ws: Workspace = {
+    sessionId, model, cwd, root, branch, commitSha, isWorktree, repoName, projectKey, isGit: repo !== null, home,
+  }
   await update($, workspace, () => ws)
   await refreshPricing($, home)
   return ws
+}
+
+// Inside git the todo manager works out the project (the main checkout's
+// folder name) and the current branch itself; outside git it needs both, the
+// folder name and NON_GIT_BRANCH. Only this branch's tasks are listed; open
+// work on other branches comes back as a count.
+const refreshTodos = async ($: EngineInterface, ws: Workspace | null) => {
+  if (ws === null) return
+  const argv = [TODO_BIN, 'status-lines', '--working-dir', ws.cwd, '--format', 'json']
+  argv.push('--branch', 'current', '--hide-status', 'cancelled')
+  if (!ws.isGit) argv.push('--project', ws.projectKey, '--git-branch', NON_GIT_BRANCH)
+  try {
+    const r = await $.process.run(argv, { timeoutMs: 5000 })
+    if (r.exitCode !== 0) return
+    const { lines, elsewhere } = parseStatusOutput(r.stdout)
+    await update($, todoTasks, () => lines)
+    await update($, todoElsewhere, () => elsewhere)
+  } catch {
+    // Binary missing or slow: keep the last list.
+  }
 }
 
 // Fast mode bills at a higher per-token rate, so turning on gets a toast.
@@ -279,13 +313,14 @@ export const register: Register = on => {
       await update($, now, () => t)
     }
     await tick()
-    await refreshWorkspace($)
+    await refreshTodos($, await refreshWorkspace($))
     await refreshFeed($)
     await refreshFastMode($)
 
     // Drives the elapsed time and the cache countdown between events.
     $.clock.every(1000, () => void tick())
     $.clock.every(FEED_POLL_MS, () => void refreshFeed($))
+    $.clock.every(TODO_POLL_MS, () => void read($, workspace).then(ws => refreshTodos($, ws)))
 
     // CI: first fetch off the start-up path (gh takes a second or two), then
     // the refresh policy on every tick.
@@ -371,7 +406,7 @@ export const register: Register = on => {
   // Branch, model and cwd can all move during a turn.
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined) {
-      await refreshWorkspace($)
+      await refreshTodos($, await refreshWorkspace($))
       await refreshFastMode($)
       // A commit or branch switch this turn is a reason to fetch; off the
       // turn's end so gh never delays it.
@@ -386,6 +421,17 @@ export const register: Register = on => {
     const ran = await next(e)
     if (ran.deny === undefined && ran.isError !== true && isPrCreated(e.command, ran.result.stdout)) {
       $.clock.after(0, () => void refreshCi($, true))
+    }
+
+    return ran
+  })
+
+  // Any swift-todo-manager call may have changed the list: re-read it as soon
+  // as the call lands, rather than at the end of the turn.
+  on('tool.call', async ($, e, next) => {
+    const ran = await next(e)
+    if (String(e.tool).startsWith(TODO_TOOL_PREFIX) && ran.deny === undefined) {
+      await refreshTodos($, await read($, workspace))
     }
 
     return ran
@@ -422,18 +468,20 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Button, Text } = $.ui.resolve(e)
-    const [u, step, api, ws, at, prices, claude, ciStatus, isFetching, isFast, fed] = await Promise.all([
+    const [u, step, api, ws, at, prices, todos, claude, ciStatus, isFetching, isFast, fed, elsewhere] = await Promise.all([
       read($, usage),
       read($, lastStep),
       read($, apiMs),
       read($, workspace),
       read($, now),
       read($, pricing),
+      read($, todoTasks),
       read($, claudeTasks),
       read($, ci),
       read($, isCiFetching),
       read($, isFastMode),
       read($, feed),
+      read($, todoElsewhere),
     ])
     const home = ws?.home
     const effort = fed?.effort ?? step?.effort
@@ -621,10 +669,13 @@ export const register: Register = on => {
 
         {ciSection()}
 
-        {claude.length > 0 && (
+        {(todos.length > 0 || claude.length > 0 || elsewhere > 0) && (
           <Box flexDirection="column">
             <Text> </Text>
             <Heading color="cyan">Tasks</Heading>
+            {todos.map(taskRow)}
+            {elsewhere > 0 && <Text dimColor>+{elsewhere} on other branches</Text>}
+            {todos.length > 0 && claude.length > 0 && <Text dimColor>claude:</Text>}
             {claude.map(taskRow)}
           </Box>
         )}

@@ -21,7 +21,8 @@ export type LastStep = {
 // fastInput is absent for a model with no fast mode.
 export type Price = { id: string; input: number; write5m: number; write1h: number; fastInput?: number }
 
-// One row of the Tasks section: pending, in_progress or completed.
+// One row of the Tasks section, from either source. Status is the source's
+// own word: pending, in_progress, completed, blocked, cancelled.
 export type TaskLine = { id: string; title: string; status: string }
 
 // What statusline-feed.sh saved from the status line's JSON for this session:
@@ -64,6 +65,10 @@ export type Workspace = {
   commitSha?: string
   isWorktree: boolean
   repoName?: string
+  // The main repo's name in a git checkout or worktree, else the folder's
+  // name: the swift-todo-manager project key the sidebar passes outside git
+  // (inside git the todo manager works it out itself).
+  projectKey: string
   isGit: boolean
   home?: string
 }
@@ -76,6 +81,8 @@ declare module 'claude-code' {
       apiMs: number
       workspace: Workspace | null
       pricing: Price[]
+      todoTasks: TaskLine[]
+      todoElsewhere: number
       claudeTasks: TaskLine[]
       ci: CiStatus | null
       isCiFetching: boolean

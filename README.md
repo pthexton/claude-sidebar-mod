@@ -103,6 +103,15 @@ Claude Code can't bind function keys, but it can bind chords to the CI commands.
 
 To use F5 / F6 anyway, have your terminal send those chords: in Ghostty, `keybind = f5=text:\x18r` and `keybind = f6=text:\x18o`; in macOS Terminal, Settings > Profiles > Keyboard, Send Text `\030r` and `\030o`.
 
+## This branch: todo-plugin
+
+This branch is `main` plus a personal integration with swift-todo-manager, a local MCP todo
+tracker (`~/Developer/swift/SwiftTodoManager`). The Tasks section also lists its
+tasks for the current repo and branch, with a dim `+N on other branches` line for open work elsewhere.
+It needs the `SwiftTodoManager` binary at the path in `TODO_BIN` (`sidebar/hooks/register.tsx`), and
+re-reads the list after any `mcp__swift-todo-manager__*` call, at the end of each turn, and every 30
+seconds. Share `main`, not this branch; merge `main` into it to pick up changes.
+
 ## Developing
 
 ```

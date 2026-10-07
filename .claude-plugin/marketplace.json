@@ -1,0 +1,12 @@
+{
+  "name": "pt-mods",
+  "description": "Claude Code mods: a docked session sidebar",
+  "owner": { "name": "pthexton" },
+  "plugins": [
+    {
+      "name": "sidebar",
+      "source": "./sidebar",
+      "description": "Docked session sidebar: model, usage, session, workspace, CI and tasks"
+    }
+  ]
+}

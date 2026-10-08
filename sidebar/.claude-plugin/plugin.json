@@ -1,6 +1,6 @@
 {
   "name": "sidebar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Docked session sidebar: model, usage, session, workspace, CI and tasks",
   "types": "./types/index.d.ts"
 }

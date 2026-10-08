@@ -127,6 +127,13 @@ const refreshWorkspace = async ($: EngineInterface) => {
   return ws
 }
 
+// The model alone, without the git calls: cheap enough for the 1s tick, which
+// catches a switch no hook announces (the picker, /config, an auto fallback).
+const refreshModel = async ($: EngineInterface) => {
+  const [model, ws] = await Promise.all([$.session.model(), read($, workspace)])
+  if (ws !== null && ws.model !== model) await update($, workspace, () => ({ ...ws, model }))
+}
+
 // Inside git the todo manager works out the project (the main checkout's
 // folder name) and the current branch itself; outside git it needs both, the
 // folder name and NON_GIT_BRANCH. Only this branch's tasks are listed; open
@@ -311,6 +318,7 @@ export const register: Register = on => {
     const tick = async () => {
       const t = await $.clock.now()
       await update($, now, () => t)
+      await refreshModel($)
     }
     await tick()
     await refreshTodos($, await refreshWorkspace($))
@@ -358,6 +366,14 @@ export const register: Register = on => {
   on('command.run', { command: 'fast' }, async ($, e, next) => {
     const ran = await next(e)
     await refreshFastMode($)
+
+    return ran
+  })
+
+  // The built-in /model: show the new model as soon as the command returns.
+  on('command.run', { command: 'model' }, async ($, e, next) => {
+    const ran = await next(e)
+    await refreshModel($)
 
     return ran
   })

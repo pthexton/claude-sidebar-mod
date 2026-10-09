@@ -41,7 +41,7 @@ The sidebar only docks beside the transcript in the **fullscreen** layout. Add t
 | Model | model, context bar, 5h / 7d rate-limit bars (subscriptions only), prompt-cache chip | nothing; see the two optional extras below for a fuller cache chip |
 | Session | cost, elapsed time, API time, effort, session id with a copy button | nothing |
 | Workspace | repo (and `(wt)` in a worktree), cwd, project root, branch, added dirs | `git` on `PATH`; added dirs need the status line feed |
-| CI | the branch's PR, check counts, failing and pending checks, refresh and open-PR buttons | [`gh`](https://cli.github.com/), signed in (`gh auth login`). Hidden when there's no PR or `gh` can't answer |
+| CI | the branch's PR, check counts, merge conflicts with the base (in red, with a toast when they first appear), failing and pending checks, refresh and open-PR buttons. Re-checked every 5 minutes once CI has finished, since the base can move on | [`gh`](https://cli.github.com/), signed in (`gh auth login`). Hidden when there's no PR or `gh` can't answer |
 | Tasks | Claude's own task list (`TodoWrite`, `TaskCreate`, `TaskUpdate`) for the main conversation | nothing |
 | Cost | the billing discount in use, the session cost at list price, and where to change the discount. Hidden when the discount is 0 | nothing |
 

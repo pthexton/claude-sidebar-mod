@@ -3,6 +3,7 @@ import type { EngineInterface, Register, SessionMeasureInput, SessionUsage } fro
 
 import type { CiCheck, CiStatus, RateWindow, TaskLine, Usage, Workspace } from '../types'
 import {
+  hasConflict,
   isNoPrError,
   isPrCreated,
   notableChecks,
@@ -178,7 +179,7 @@ const refreshCi = async ($: EngineInterface, force: boolean): Promise<CiStatus |
 
   await update($, isCiFetching, () => true)
   try {
-    const view = await gh($, ws.cwd, ['pr', 'view', '--json', 'number,title,url,createdAt'])
+    const view = await gh($, ws.cwd, ['pr', 'view', '--json', 'number,title,url,createdAt,mergeable'])
     let status: CiStatus
     if (view.exitCode !== 0) {
       status = isNoPrError(view.stderr)
@@ -195,6 +196,10 @@ const refreshCi = async ($: EngineInterface, force: boolean): Promise<CiStatus |
       status = { branch, commitSha, pr, checks, fetchedAt: await $.clock.now() }
     }
     await update($, ci, () => status)
+    // Newly conflicting needs attention; the pane keeps showing it after.
+    if (status.pr !== null && hasConflict(status.pr) && !hasConflict(prev?.pr)) {
+      $.ui.toast(`PR #${status.pr.number} has merge conflicts to resolve`, { timeoutMs: 10_000 })
+    }
     return status
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -210,7 +215,8 @@ const ciSummaryText = (status: CiStatus | null) => {
   if (status.error !== undefined) return `CI: ${status.error}`
   if (status.pr === null) return `CI: no PR for ${status.branch}.`
   const s = summarize(status.checks)
-  return `CI #${status.pr.number}: ${s.pass} pass, ${s.fail} fail, ${s.pending} pending`
+  const conflict = hasConflict(status.pr) ? ', merge conflicts' : ''
+  return `CI #${status.pr.number}: ${s.pass} pass, ${s.fail} fail, ${s.pending} pending${conflict}`
 }
 
 const ciRefreshAction = async ($: EngineInterface) => {
@@ -548,6 +554,13 @@ export const register: Register = (on, options) => {
             {s.skip > 0 && <Text dimColor>⊝ {s.skip}</Text>}
             {ciStatus.checks.length === 0 && <Text dimColor>no checks yet</Text>}
           </Text>
+          {hasConflict(pr) && (
+            <Text bold color="red" wrap="truncate-end">
+              ✗ merge conflicts: resolve to merge
+            </Text>
+          )}
+          {pr.mergeable === 'MERGEABLE' && <Text dimColor>✓ no merge conflicts</Text>}
+          {pr.mergeable === 'UNKNOWN' && <Text dimColor>◔ checking for merge conflicts</Text>}
           {notableChecks(ciStatus.checks).map(checkRow)}
           {ciStatus.error !== undefined && (
             <Text color="red" wrap="truncate-end">! {ciStatus.error}</Text>

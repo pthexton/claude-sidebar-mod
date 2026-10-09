@@ -43,7 +43,14 @@ export type Feed = {
 // gh pr checks' bucket: pass, fail, pending, skipping, cancel.
 export type CiCheck = { bucket: string; name: string; workflow?: string }
 
-export type CiPr = { number: number; title: string; url: string; createdAt?: string }
+export type CiPr = {
+  number: number
+  title: string
+  url: string
+  createdAt?: string
+  // gh's mergeable: MERGEABLE, CONFLICTING, or UNKNOWN while GitHub works it out.
+  mergeable?: string
+}
 
 // The branch's PR and its checks, fetched straight from gh by the mod.
 export type CiStatus = {

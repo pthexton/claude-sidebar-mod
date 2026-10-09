@@ -7,9 +7,15 @@ export const parsePr = (json: string): CiPr | null => {
   try {
     const pr: unknown = JSON.parse(json)
     if (typeof pr !== 'object' || pr === null) return null
-    const { number, title, url, createdAt } = pr as Record<string, unknown>
+    const { number, title, url, createdAt, mergeable } = pr as Record<string, unknown>
     return typeof number === 'number' && typeof title === 'string' && typeof url === 'string'
-      ? { number, title, url, createdAt: typeof createdAt === 'string' ? createdAt : undefined }
+      ? {
+          number,
+          title,
+          url,
+          createdAt: typeof createdAt === 'string' ? createdAt : undefined,
+          mergeable: typeof mergeable === 'string' ? mergeable : undefined,
+        }
       : null
   } catch {
     return null
@@ -40,20 +46,26 @@ export const isNoPrError = (stderr: string) => /no (open )?pull requests? (found
 //   local commit moved              -> now (CI reports on another sha)
 //   any check pending               -> every 60s
 //   no PR                           -> every 300s (one may be opened elsewhere)
+//   GitHub still working out merge  -> every 30s (mergeable UNKNOWN)
 //   PR under 10 min old, no checks  -> every 30s (workflows still registering)
-//   all checks terminal             -> never (F5 forces)
+//   otherwise                       -> every 300s (the base can move on and
+//                                      conflict with no local change)
 export const shouldFetch = (ci: CiStatus | null, branch: string, commitSha: string, now: number) => {
   if (ci === null || ci.branch !== branch) return true
   if (commitSha !== '' && ci.commitSha !== commitSha) return true
   const age = now - ci.fetchedAt
   if (ci.checks.some(c => c.bucket === 'pending')) return age >= 60_000
   if (ci.pr === null) return age >= 300_000
+  if (ci.pr.mergeable === 'UNKNOWN') return age >= 30_000
   if (ci.checks.length === 0) {
     const prAge = ci.pr.createdAt === undefined ? Infinity : now - Date.parse(ci.pr.createdAt)
     if (prAge < 600_000) return age >= 30_000
   }
-  return false
+  return age >= 300_000
 }
+
+// The PR can't merge until its conflicts with the base are resolved.
+export const hasConflict = (pr: CiPr | null | undefined) => pr?.mergeable === 'CONFLICTING'
 
 export type CiSummary = { pass: number; fail: number; pending: number; cancel: number; skip: number }
 

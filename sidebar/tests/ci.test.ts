@@ -1,6 +1,15 @@
 import { expect, test } from 'claude-code/testing'
 
-import { isNoPrError, isPrCreated, notableChecks, parseChecks, parsePr, shouldFetch, summarize } from '../hooks/ci'
+import {
+  hasConflict,
+  isNoPrError,
+  isPrCreated,
+  notableChecks,
+  parseChecks,
+  parsePr,
+  shouldFetch,
+  summarize,
+} from '../hooks/ci'
 import type { CiStatus } from '../types'
 
 const T0 = Date.parse('2026-10-06T12:00:00Z')
@@ -48,10 +57,23 @@ test('polls pending checks every 60s and a missing PR every 300s', async () => {
   expect(shouldFetch(noPr, 'pt/x', 'abc', T0 + 300_000)).toBe(true)
 })
 
-test('polls a fresh PR with no checks every 30s, and leaves finished CI alone', async () => {
+test('polls a fresh PR with no checks every 30s, and finished CI every 300s for new conflicts', async () => {
   const fresh = base({ pr: { ...PR, createdAt: new Date(T0 - 60_000).toISOString() }, checks: [] })
   expect(shouldFetch(fresh, 'pt/x', 'abc', T0 + 30_000)).toBe(true)
-  expect(shouldFetch(base(), 'pt/x', 'abc', T0 + 3_600_000)).toBe(false)
+  expect(shouldFetch(base(), 'pt/x', 'abc', T0 + 299_000)).toBe(false)
+  expect(shouldFetch(base(), 'pt/x', 'abc', T0 + 300_000)).toBe(true)
+})
+
+test('reads mergeable, and asks again every 30s while GitHub is still working it out', async () => {
+  const pr = parsePr(JSON.stringify({ ...PR, mergeable: 'CONFLICTING' }))
+  expect(pr?.mergeable).toBe('CONFLICTING')
+  expect(hasConflict(pr)).toBe(true)
+  expect(hasConflict({ ...PR, mergeable: 'MERGEABLE' })).toBe(false)
+  expect(hasConflict(null)).toBe(false)
+
+  const unknown = base({ pr: { ...PR, mergeable: 'UNKNOWN' } })
+  expect(shouldFetch(unknown, 'pt/x', 'abc', T0 + 29_000)).toBe(false)
+  expect(shouldFetch(unknown, 'pt/x', 'abc', T0 + 30_000)).toBe(true)
 })
 
 test('summarises and picks out failing and pending checks', async () => {

@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { costColor, parsePricing, recacheCost } from '../hooks/pricing'
+import { costColor, discounted, parsePricing, recacheCost, toDiscount } from '../hooks/pricing'
 
 const TSV = [
   '# Anthropic first-party API prices, USD per million tokens.',
@@ -38,6 +38,16 @@ test('with no pricing file there is no cost at all, so the chip shows tokens onl
 
 test('an unpriced model has no cost, so the chip falls back to tokens', async () => {
   expect(recacheCost(parsePricing(TSV), 'claude-sonnet-9', 100_000, '1h')).toBeUndefined()
+})
+
+test('takes the discount off a list price, clamping the setting to 0-100', async () => {
+  expect(Math.round(discounted(10, 9) * 100)).toBe(910)
+  expect(discounted(10, 0)).toBe(10)
+  expect(toDiscount(9)).toBe(9)
+  expect(toDiscount(-5)).toBe(0)
+  expect(toDiscount(150)).toBe(100)
+  expect(toDiscount('9')).toBe(0)
+  expect(toDiscount(Number.NaN)).toBe(0)
 })
 
 test('colours the cost yellow from $1 and red from $5', async () => {

@@ -37,4 +37,12 @@ export const recacheCost = (
   return (tokens * rate) / 1_000_000
 }
 
-export const costColor = (usd: number) => (usd >= 5 ? 'red' : usd >= 1 ? 'yellow' : 'gray')
+// The discountPercent setting as a usable rate: 0 to 100, anything else 0.
+export const toDiscount = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0
+
+// A list-price figure (Claude Code's session cost, a rebuild estimate) after
+// the billing discount.
+export const discounted = (usd: number, percent: number) => usd * (1 - percent / 100)
+
+export const costColor =(usd: number) => (usd >= 5 ? 'red' : usd >= 1 ? 'yellow' : 'gray')

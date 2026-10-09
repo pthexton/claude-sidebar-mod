@@ -43,6 +43,13 @@ The sidebar only docks beside the transcript in the **fullscreen** layout. Add t
 | Workspace | repo (and `(wt)` in a worktree), cwd, project root, branch, added dirs | `git` on `PATH`; added dirs need the status line feed |
 | CI | the branch's PR, check counts, failing and pending checks, refresh and open-PR buttons | [`gh`](https://cli.github.com/), signed in (`gh auth login`). Hidden when there's no PR or `gh` can't answer |
 | Tasks | Claude's own task list (`TodoWrite`, `TaskCreate`, `TaskUpdate`) for the main conversation | nothing |
+| Cost | the billing discount in use, the session cost at list price, and where to change the discount. Hidden when the discount is 0 | nothing |
+
+## Billing discount
+
+Costs are shown after a discount off Anthropic's published prices, 9% by default. That applies to the session cost (Claude Code's own figure, scaled) and to the cache rebuild cost. Both are marked `*`, and the Cost section at the bottom shows the discount and the session cost at list price.
+
+To change it, open `/config` and set **Billing discount (%)** under the sidebar plugin. Set it to 0 to see list prices; the Cost section then disappears.
 
 Commands: `/sidebar` shows or hides the pane (its close mark ignores clicks, so a stray one can't close it), `/ci-refresh` fetches CI now, `/open-pr` opens the PR in your browser (`open` on macOS, `xdg-open` on Linux).
 
@@ -70,7 +77,7 @@ Without it, fast mode comes from the `fastMode` setting, and the cache chip assu
 
 ### Pricing file: cache rebuild cost in dollars
 
-The cache chip always shows the rebuild size in tokens. To also show what a cold cache would cost to rebuild (`↻$0.37 (45.9k)`, yellow from $1, red from $5), create `~/.claude/state/model-pricing.tsv`. Without it, or for a model it doesn't list, no dollar figure is shown.
+The cache chip always shows the rebuild size in tokens. To also show what a cold cache would cost to rebuild (`↻$0.37 (45.9k)`, yellow from $1, red from $5), create `~/.claude/state/model-pricing.tsv`. Without it, or for a model it doesn't list, no dollar figure is shown. The figure has the [billing discount](#billing-discount) taken off.
 
 It's tab separated, USD per million tokens, one row per model. Lines starting with `#` and the header row are skipped:
 

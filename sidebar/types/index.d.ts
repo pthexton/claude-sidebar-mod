@@ -81,6 +81,8 @@ declare module 'claude-code' {
       isCiFetching: boolean
       isFastMode: boolean
       feed: Feed | null
+      // The billing discount, percent, once changed in /config this session.
+      discountChange: number | null
       now: number
     }
   }

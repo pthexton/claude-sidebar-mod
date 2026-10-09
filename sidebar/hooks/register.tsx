@@ -12,7 +12,7 @@ import {
   summarize,
 } from './ci'
 import { FEED_DIR, parseFeed, resolveCache } from './feed'
-import { costColor, parsePricing, recacheCost } from './pricing'
+import { costColor, discounted, parsePricing, recacheCost, toDiscount } from './pricing'
 import {
   applyTaskCreate,
   applyTaskUpdate,
@@ -44,6 +44,9 @@ const ci = atom({ plugin: 'sidebar', key: 'ci' } as const, null)
 const isCiFetching = atom({ plugin: 'sidebar', key: 'isCiFetching' } as const, false)
 const isFastMode = atom({ plugin: 'sidebar', key: 'isFastMode' } as const, false)
 const feed = atom({ plugin: 'sidebar', key: 'feed' } as const, null)
+// A change made in /config this session; null until then, when the module's
+// own options (read as it loaded) are the setting.
+const discountChange = atom({ plugin: 'sidebar', key: 'discountChange' } as const, null)
 
 // statusline-feed.sh rewrites its file whenever the status line updates.
 const FEED_POLL_MS = 2000
@@ -240,6 +243,9 @@ const openPrAction = async ($: EngineInterface) => {
 
 const barColor = (pct: number) => (pct >= 90 ? 'red' : pct >= 70 ? 'yellow' : 'green')
 
+// 9 -> "9%", 7.5 -> "7.5%".
+const fmtPercent = (pct: number) => `${Number(pct.toFixed(2))}%`
+
 const fmtDuration = (ms: number) => {
   const total = Math.max(0, Math.floor(ms / 1000))
   const d = Math.floor(total / 86400)
@@ -275,7 +281,20 @@ const windowLabel = (kind: string) => ({ five_hour: '5h', seven_day: '7d' })[kin
 
 // ---- hooks --------------------------------------------------------------
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  const discountOption = toDiscount(options.discountPercent)
+
+  // The discount row in /config: show a change at once, whether or not the
+  // engine reloads the module with the new options.
+  on('config.set', async ($, e, next) => {
+    const set = await next(e)
+    if (set.deny === undefined && e.provider.plugin === 'sidebar' && e.key.endsWith('.discountPercent')) {
+      await update($, discountChange, () => toDiscount(set.value))
+    }
+
+    return set
+  })
+
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'sidebar', description: 'Show or hide the session sidebar pane' })
 
@@ -438,7 +457,7 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Button, Text } = $.ui.resolve(e)
-    const [u, step, api, ws, at, prices, claude, ciStatus, isFetching, isFast, fed] = await Promise.all([
+    const [u, step, api, ws, at, prices, claude, ciStatus, isFetching, isFast, fed, changed] = await Promise.all([
       read($, usage),
       read($, lastStep),
       read($, apiMs),
@@ -450,7 +469,10 @@ export const register: Register = on => {
       read($, isCiFetching),
       read($, isFastMode),
       read($, feed),
+      read($, discountChange),
     ])
+    const discount = changed ?? discountOption
+    const listCost = u?.costUsd ?? 0
     const home = ws?.home
     const effort = fed?.effort ?? step?.effort
     const pathWidth = Math.max(16, e.props.bodyColumns - 6)
@@ -475,8 +497,10 @@ export const register: Register = on => {
       const { tokens, ttl } = view
       const left = view.expiresAt - at
       const toks = fmtTokens(tokens)
-      const cost = recacheCost(prices, model, tokens, ttl, isFast)
-      const amount = cost === undefined ? toks : `$${cost.toFixed(2)} (${toks})`
+      const listPrice = recacheCost(prices, model, tokens, ttl, isFast)
+      const cost = listPrice === undefined ? undefined : discounted(listPrice, discount)
+      const amount =
+        cost === undefined ? toks : `$${cost.toFixed(2)}${discount > 0 ? '*' : ''} (${toks})`
       return left > 0 ? (
         <Text>
           <Text dimColor>cache </Text>
@@ -570,7 +594,8 @@ export const register: Register = on => {
         <Heading color="yellow">Session</Heading>
         <Text>
           <Text dimColor>cost  </Text>
-          <Text color="yellow">${(u?.costUsd ?? 0).toFixed(2)}</Text>
+          <Text color="yellow">${discounted(listCost, discount).toFixed(2)}</Text>
+          {discount > 0 && <Text dimColor>*</Text>}
         </Text>
         <Text>
           <Text dimColor>time  </Text>
@@ -642,6 +667,18 @@ export const register: Register = on => {
             <Text> </Text>
             <Heading color="cyan">Tasks</Heading>
             {claude.map(taskRow)}
+          </Box>
+        )}
+
+        {discount > 0 && (
+          <Box flexDirection="column">
+            <Text> </Text>
+            <Heading color="yellow">Cost</Heading>
+            <Text wrap="truncate-end">* {fmtPercent(discount)} discount off list prices</Text>
+            <Text>
+              <Text dimColor>list  </Text>${listCost.toFixed(2)}
+            </Text>
+            <Text dimColor wrap="wrap">Change it in /config: Billing discount (%)</Text>
           </Box>
         )}
       </Box>

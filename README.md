@@ -56,7 +56,7 @@ Costs are shown after a discount off Anthropic's published prices, 9% by default
 
 To change it, open `/config` and set **Billing discount (%)** under the sidebar plugin. Set it to 0 to see list prices; the Cost section then disappears.
 
-Commands: `/sidebar` shows or hides the pane (its close mark ignores clicks, so a stray one can't close it), `/ci-refresh` fetches CI now, `/open-pr` opens the PR in your browser (`open` on macOS, `xdg-open` on Linux).
+Commands: `/sidebar` shows or hides the pane (its close mark ignores clicks, so a stray one can't close it), `/ci-refresh` fetches CI now, `/open-pr` opens the PR in your browser (`open` on macOS, `xdg-open` on Linux, `rundll32 url.dll,FileProtocolHandler` on Windows).
 
 ## Optional extras
 

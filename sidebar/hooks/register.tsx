@@ -314,11 +314,12 @@ const openPrAction = async ($: EngineInterface) => {
     $.ui.toast(ciSummaryText(status))
     return
   }
-  // macOS has `open`; Linux desktops have `xdg-open`.
+  // macOS has `open`; Linux desktops have `xdg-open`; Windows has rundll32's
+  // URL handler (explorer.exe opens it too, but exits 1 when it succeeds).
   let isOpened = false
-  for (const opener of ['open', 'xdg-open']) {
+  for (const opener of [['open'], ['xdg-open'], ['rundll32', 'url.dll,FileProtocolHandler']]) {
     try {
-      isOpened = (await $.process.run([opener, pr.url], { timeoutMs: 5000 })).exitCode === 0
+      isOpened = (await $.process.run([...opener, pr.url], { timeoutMs: 5000 })).exitCode === 0
     } catch {
       isOpened = false
     }

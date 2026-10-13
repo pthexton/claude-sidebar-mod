@@ -88,7 +88,7 @@ It's tab separated, USD per million tokens, one row per model. Lines starting wi
 
 ```
 model_id	input	write_5m	write_1h	cache_read	output	fast_input
-claude-opus-5-5	5	6.25	10	0.5	25	30
+claude-opus-5-5	4	5	8	0.2	20	8
 claude-haiku-4-5	1	1.25	2	0.1	5
 ```
 

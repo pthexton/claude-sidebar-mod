@@ -13,6 +13,7 @@ import {
   summarize,
 } from './ci'
 import { FEED_DIR, parseFeed, resolveCache } from './feed'
+import { baseName, homeDir } from './paths'
 import { costColor, discounted, parsePricing, recacheCost, toDiscount } from './pricing'
 import { elapsedText, isKnownStart } from './session'
 import {
@@ -145,13 +146,15 @@ const git = async ($: EngineInterface, cwd: string, args: string[]) => {
 
 const refreshWorkspace = async ($: EngineInterface) => {
   const cwd = await $.session.cwd()
-  const [sessionId, model, root, repo, home] = await Promise.all([
+  const [sessionId, model, root, repo, homeVar, userProfile] = await Promise.all([
     $.session.id(),
     $.session.model(),
     $.session.root(),
     $.session.repo(),
     $.env.get('HOME'),
+    $.env.get('USERPROFILE'),
   ])
+  const home = homeDir(homeVar, userProfile)
   let branch: string | undefined
   let isWorktree = false
   let commitSha: string | undefined
@@ -162,8 +165,8 @@ const refreshWorkspace = async ($: EngineInterface) => {
     const [gitDir, commonDir] = (dirs ?? '').split('\n')
     isWorktree = gitDir !== undefined && commonDir !== undefined && gitDir !== commonDir
   }
-  const repoName = repo === null ? undefined : repo.root.split('/').at(-1)
-  const projectKey = repoName ?? cwd.split('/').at(-1) ?? cwd
+  const repoName = repo === null ? undefined : baseName(repo.root)
+  const projectKey = repoName ?? baseName(cwd) ?? cwd
   const ws: Workspace = {
     sessionId, model, cwd, root, branch, commitSha, isWorktree, repoName, projectKey, isGit: repo !== null, home,
   }

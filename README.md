@@ -70,6 +70,16 @@ Mods can't read some of what Claude Code gives a status line command. `sidebar/s
 }
 ```
 
+On Windows, use `sidebar/statusline-feed.ps1` instead, which needs neither bash nor `jq`. Use forward slashes in the path, since Claude Code runs status line commands through Git Bash when it's installed:
+
+```json
+{
+  "statusLine": { "type": "command", "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/path/to/claude-sidebar-mod/sidebar/statusline-feed.ps1\"" }
+}
+```
+
+There's only one status line, so this replaces any you already have. To keep another tool's status line too (Orca installs one, for example), pass its program with `-Then`: the feed saves the input first, then hands the same input to that program and prints what it prints. Starting PowerShell can take a second or more, and Claude Code cancels a status line run that's still going when the next update is due, so a long-running `-Then` program may not finish during a busy turn.
+
 With it, the sidebar shows:
 
 - a red **FAST MODE ON** line (and a toast) when fast mode is on, since it bills at a higher rate;

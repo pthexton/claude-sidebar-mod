@@ -48,7 +48,7 @@ The sidebar only docks beside the transcript in the **fullscreen** layout. Add t
 | Workspace | repo (and `(wt)` in a worktree), cwd, project root, branch, added dirs | `git` on `PATH`; added dirs need the status line feed |
 | CI | the branch's PR, check counts, merge conflicts with the base (in red, with a toast when they first appear), failing and pending checks, refresh and open-PR buttons. Re-checked every 5 minutes once CI has finished, since the base can move on | [`gh`](https://cli.github.com/), signed in (`gh auth login`). Hidden when there's no PR or `gh` can't answer |
 | Tasks | Claude's own task list (`TodoWrite`, `TaskCreate`, `TaskUpdate`) for the main conversation | nothing |
-| Cost | the billing discount in use, the session cost at list price, and where to change the discount. Hidden when the discount is 0 | nothing |
+| Cost | the billing discount in use, the session cost at list price, and where to change the discount; with [£ shown](#pounds-), the exchange rate in use. Hidden when the discount is 0 and £ is off | nothing |
 
 ## Billing discount
 
@@ -56,7 +56,13 @@ Costs are shown after a discount off Anthropic's published prices, 9% by default
 
 To change it, open `/config` and set **Billing discount (%)** under the sidebar plugin. Set it to 0 to see list prices; the Cost section then disappears.
 
-Commands: `/sidebar` shows or hides the pane (its close mark ignores clicks, so a stray one can't close it), `/ci-refresh` fetches CI now, `/open-pr` opens the PR in your browser (`open` on macOS, `xdg-open` on Linux, `rundll32 url.dll,FileProtocolHandler` on Windows).
+## Pounds (£)
+
+To see costs in pounds as well as dollars, open `/config` and switch on **GBP rate (£)** under the sidebar plugin, or run `/gbp` (run it again to switch £ off). It's off by default. Dollars stay first, since Anthropic bills in dollars: the session cost reads `$1.12* £0.85*` (both starred while the [billing discount](#billing-discount) is on), and the cache chip adds £ when the pane is wide enough for it.
+
+The rate is the European Central Bank's daily reference rate, fetched from [Frankfurter](https://frankfurter.dev) (free, no key) and shared by every session. The ECB publishes it once a working day, at about 3pm UK time. The saved rate is fetched again once it's 6 hours old, so that's at most 4 small requests a day, and each session checks hourly, so one left open all day picks up the new rate. The Cost section shows the rate in use and its date: `£ rate: 0.7549 (ECB, 13th Oct)`. If the fetch fails, the last rate fetched is kept and it's tried again an hour later, once for all sessions; with no rate saved, no £ figure is shown. Nothing is fetched while the setting is off.
+
+Commands: `/sidebar` shows or hides the pane (its close mark ignores clicks, so a stray one can't close it), `/gbp` switches [£](#pounds-) on or off, `/ci-refresh` fetches CI now, `/open-pr` opens the PR in your browser (`open` on macOS, `xdg-open` on Linux, `rundll32 url.dll,FileProtocolHandler` on Windows).
 
 ## Optional extras
 

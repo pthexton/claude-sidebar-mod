@@ -82,6 +82,14 @@ export type Workspace = {
   home?: string
 }
 
+// USD to GBP, from the ECB's daily rate: `date` is the rate's own day,
+// `fetchedAt` when it was fetched (epoch ms).
+export type GbpRate = {
+  rate: number
+  date: string
+  fetchedAt: number
+}
+
 declare module 'claude-code' {
   interface PluginState {
     sidebar: {
@@ -99,6 +107,10 @@ declare module 'claude-code' {
       feed: Feed | null
       // The billing discount, percent, once changed in /config this session.
       discountChange: number | null
+      // The USD to GBP rate in use; null until one is fetched or read back.
+      gbpRate: GbpRate | null
+      // The GBP rate (£) setting, once changed in /config this session.
+      gbpChange: boolean | null
       now: number
     }
   }

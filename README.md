@@ -5,7 +5,7 @@ A Claude Code plugin marketplace with two plugins, installed separately:
 - **sidebar**: a pane docked beside the transcript that shows the session's model, usage, workspace, CI and tasks. It replaces a multi-line status line, so the prompt box stays in one place.
 - **rose-pine**: [Rosé Pine](https://rosepinetheme.com/) colour themes for Claude Code itself. See [Rosé Pine themes](#rosé-pine-themes).
 
-The rest of this page is about the sidebar until that section.
+The rest of this page is about the sidebar until that section. What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
 
 It's built on Claude Code's function-hooks plugin API, which is early access and may change between releases.
 

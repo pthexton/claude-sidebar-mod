@@ -445,11 +445,14 @@ export const register: Register = (on, options) => {
   // told here.
   on('command.run', { command: CMD_GBP }, async $ => {
     const isOn = !((await read($, gbpChange)) ?? gbpOption)
-    // Where there's no /config to save to (claude -p), saving throws: say so.
+    // Where there's no /config to save to (claude -p), there's no row: say so
+    // plainly. Any other refusal gives its own reason.
     let deny: string | undefined
     try {
-      const row = (await $.config.list()).find(r => r.provider.plugin === 'sidebar' && r.key.endsWith('.showGbp'))
-      deny = (await $.config.set({ key: row?.key ?? 'sidebar.showGbp', value: isOn })).deny
+      // The owner can carry a source: `claude --plugin-dir` lists sidebar@inline.
+      const row = (await $.config.list()).find(r => /^sidebar(@|$)/.test(r.provider.plugin) && r.key.endsWith('.showGbp'))
+      if (row === undefined) return { text: "£ not changed: the setting can't be saved here (claude -p has no /config)." }
+      deny = (await $.config.set({ key: row.key, value: isOn })).deny
     } catch (err) {
       deny = err instanceof Error ? err.message : String(err)
     }

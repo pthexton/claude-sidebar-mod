@@ -48,7 +48,8 @@ const answerEngine = (on: On, opts: { now?: number; store?: Record<string, unkno
     return { value: e.value }
   })
   // The GBP rate (£) row as /config lists it, keyed the way an installed
-  // plugin's row might be, so /gbp is seen to use the listed key.
+  // plugin's row might be, so /gbp is seen to use the listed key. Its owner
+  // carries a source, as `claude --plugin-dir` names it.
   on('config.list', () => ({
     value: [
       {
@@ -56,7 +57,7 @@ const answerEngine = (on: On, opts: { now?: number; store?: Record<string, unkno
         label: 'GBP rate (£)',
         kind: 'boolean',
         value: false,
-        provider: { plugin: 'sidebar', tier: 'user' },
+        provider: { plugin: 'sidebar@inline', tier: 'user' },
         isLocked: false,
       },
     ],
@@ -247,7 +248,7 @@ test('/gbp where the setting cannot be saved (as in claude -p) says so and chang
   // claude -p lists no /config rows, and saving one throws
   on('config.list', () => ({ value: [] }))
   on('config.set', () => {
-    throw new Error('$.config.set: no /config row with key sidebar.showGbp')
+    throw new Error('sidebar: $.config.set: no /config row with key sidebar.showGbp ($.config.list names them)')
   })
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   on('session.measure', (_$, e) => ({ changed: e.changed }))
@@ -258,7 +259,38 @@ test('/gbp where the setting cannot be saved (as in claude -p) says so and chang
   await $.session.measure(measure)
 
   const reply = await $.command.run(GBP_COMMAND)
-  expect(reply.text).toMatch(/^£ not changed: /)
+  expect(reply.text).toBe("£ not changed: the setting can't be saved here (claude -p has no /config).")
+  const ui = await $.ui.mount({ plugin: 'sidebar', surface: 'terminal', ...PANE })
+  expect(await ui.find({ type: 'Text', text: /£/ })).toBeUndefined()
+  expect(calls).toEqual([])
+  await ui.unmount()
+})
+
+test('/gbp refused by another plugin says why and changes nothing', async ($, on) => {
+  const calls = stubRate(on, 'ok')
+  on('config.list', () => ({
+    value: [
+      {
+        key: GBP_KEY,
+        label: 'GBP rate (£)',
+        kind: 'boolean',
+        value: false,
+        provider: { plugin: 'sidebar', tier: 'user' },
+        isLocked: false,
+      },
+    ],
+  }))
+  on('config.set', () => ({ deny: 'locked by policy' }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('session.measure', (_$, e) => ({ changed: e.changed }))
+  mock.store(on)
+  const clock = mock.clock(on, { now: 0 })
+  await $.session.start(START)
+  await clock.settle()
+  await $.session.measure(measure)
+
+  const reply = await $.command.run(GBP_COMMAND)
+  expect(reply.text).toBe('£ not changed: locked by policy')
   const ui = await $.ui.mount({ plugin: 'sidebar', surface: 'terminal', ...PANE })
   expect(await ui.find({ type: 'Text', text: /£/ })).toBeUndefined()
   expect(calls).toEqual([])

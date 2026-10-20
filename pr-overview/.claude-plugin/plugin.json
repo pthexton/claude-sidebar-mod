@@ -1,0 +1,14 @@
+{
+  "name": "pr-overview",
+  "version": "0.1.0",
+  "description": "/pr-overview: the open PRs in this repo you're involved in, with new activity marked, CI and merge conflicts",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "refreshMinutes": {
+      "type": "number",
+      "title": "Refresh interval (minutes)",
+      "description": "How often the open /pr-overview pane fetches the PR list again. r in the pane refreshes at once.",
+      "default": 30
+    }
+  }
+}

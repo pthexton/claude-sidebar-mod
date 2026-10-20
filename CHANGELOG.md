@@ -2,6 +2,16 @@
 
 Notable changes to the plugins in this marketplace, newest first. Each plugin has its own version, in its `.claude-plugin/plugin.json`.
 
+## pr-overview
+
+### 0.1.0 (2026-10-20)
+
+- `/pr-overview` opens a pane of the open PRs in the session's repo that you're involved in: you opened it, commented, reviewed, were asked to review it by name, were assigned or @-mentioned, or pushed commits to it. Newest activity first.
+- `●` marks a PR with activity since you last opened it from the list. Your own comments, reviews and pushes don't mark it. The marks are shared by every session; a closed or merged PR's entry is dropped, and other repos' entries after 90 days.
+- Each row shows CI (`✓` `✗` `…`), a merge conflict, and how long ago the PR was updated. Drafts are dim.
+- Tab moves, Enter opens the PR with `gh pr view --web` (falling back to the system's opener, Windows included), `r` refreshes, Escape closes.
+- Refreshes every 30 minutes while open: **Refresh interval (minutes)** in `/config`.
+
 ## sidebar
 
 ### 0.6.0 (2026-10-19)

@@ -1,11 +1,12 @@
 # claude-sidebar-mod
 
-A Claude Code plugin marketplace with two plugins, installed separately:
+A Claude Code plugin marketplace with three plugins, installed separately:
 
 - **sidebar**: a pane docked beside the transcript that shows the session's model, usage, workspace, CI and tasks. It replaces a multi-line status line, so the prompt box stays in one place.
+- **pr-overview**: `/pr-overview` lists the open PRs in the current repo that you're involved in, marks the ones with activity you haven't seen, and opens one in the browser. See [PR overview](#pr-overview).
 - **rose-pine**: [Rosé Pine](https://rosepinetheme.com/) colour themes for Claude Code itself. See [Rosé Pine themes](#rosé-pine-themes).
 
-The rest of this page is about the sidebar until that section. What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
+The rest of this page is about the sidebar until those sections. What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
 
 It's built on Claude Code's function-hooks plugin API, which is early access and may change between releases.
 
@@ -133,6 +134,28 @@ Claude Code can't bind function keys, but it can bind chords to the CI commands.
 ```
 
 To use F5 / F6 anyway, have your terminal send those chords: in Ghostty, `keybind = f5=text:\x18r` and `keybind = f6=text:\x18o`; in macOS Terminal, Settings > Profiles > Keyboard, Send Text `\030r` and `\030o`.
+
+## PR overview
+
+`/pr-overview` opens a pane listing the open pull requests in the session's repo that you're involved in, most recently updated first. Run it again, or press Escape, to close it. Install:
+
+```
+/plugin install pr-overview --marketplace pthexton/claude-sidebar-mod
+```
+
+It needs [gh](https://cli.github.com/), logged in (`gh auth login`). The repo is the one gh picks for the session's folder.
+
+```
+acme/app  updated 09:12  [ refresh ]
+● #123  Fix token refresh on expiry            ✓  2h
+  #118  Add Orca handover                      ✗ conflict  1d
+```
+
+- **Involved** means you opened it, commented on or reviewed it, were asked to review it, wrote one of its commits, or were @-mentioned in it. Team review requests don't count. GitHub's search finds them, however many PRs the repo has open, except commits pushed to someone else's PR: for those it checks the last 50 commits of the 50 most recently updated open PRs. Closed and merged PRs are never listed.
+- **●** marks a PR with activity since you last opened it from the list, or one you haven't opened from it yet. Your own activity (your comment, review or push) doesn't mark it. The marks are shared by every session, and a PR's entry is dropped once it's closed or merged.
+- **CI** is the last commit's checks: `✓` passing, `✗` failing, `…` running, blank with no checks. **conflict** shows when GitHub reports a merge conflict. Drafts are dim.
+- **Keys**: Tab moves between PRs, Enter opens one (`gh pr view --web`), `r` refreshes, Escape closes.
+- It refreshes when opened, then every 30 minutes while it's open. Change that in `/config`: **Refresh interval (minutes)**.
 
 ## Rosé Pine themes
 

@@ -14,6 +14,7 @@ import {
 } from './ci'
 import { FEED_DIR, parseFeed, resolveCache } from './feed'
 import { FX_CHECK_MS, FX_URL, cacheAmount, fmtGbp, fmtRateLine, isRateStale, isRecentTry, parseRate, toRate } from './fx'
+import { isOwnedBy } from './owner'
 import { baseName, homeDir } from './paths'
 import { costColor, discounted, parsePricing, recacheCost, toDiscount } from './pricing'
 import { elapsedText, isKnownStart } from './session'
@@ -374,10 +375,11 @@ export const register: Register = (on, options) => {
   // or not the engine reloads the module with the new options.
   on('config.set', async ($, e, next) => {
     const set = await next(e)
-    if (set.deny === undefined && e.provider.plugin === 'sidebar' && e.key.endsWith('.discountPercent')) {
+    const isOurs = set.deny === undefined && isOwnedBy(e.provider.plugin, 'sidebar')
+    if (isOurs && e.key.endsWith('.discountPercent')) {
       await update($, discountChange, () => toDiscount(set.value))
     }
-    if (set.deny === undefined && e.provider.plugin === 'sidebar' && e.key.endsWith('.showGbp')) {
+    if (isOurs && e.key.endsWith('.showGbp')) {
       const isOn = set.value === true
       await update($, gbpChange, () => isOn)
       if (isOn) await refreshGbpRate($)
@@ -450,7 +452,7 @@ export const register: Register = (on, options) => {
     let deny: string | undefined
     try {
       // The owner can carry a source: `claude --plugin-dir` lists sidebar@inline.
-      const row = (await $.config.list()).find(r => /^sidebar(@|$)/.test(r.provider.plugin) && r.key.endsWith('.showGbp'))
+      const row = (await $.config.list()).find(r => isOwnedBy(r.provider.plugin, 'sidebar') && r.key.endsWith('.showGbp'))
       if (row === undefined) return { text: "£ not changed: the setting can't be saved here (claude -p has no /config)." }
       deny = (await $.config.set({ key: row.key, value: isOn })).deny
     } catch (err) {

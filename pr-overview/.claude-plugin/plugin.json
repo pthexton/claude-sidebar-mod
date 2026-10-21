@@ -1,6 +1,6 @@
 {
   "name": "pr-overview",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "/pr-overview: the open PRs in this repo you're involved in, with new activity marked, CI and merge conflicts",
   "types": "./types/index.d.ts",
   "userConfig": {

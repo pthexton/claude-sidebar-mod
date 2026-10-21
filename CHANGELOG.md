@@ -4,6 +4,10 @@ Notable changes to the plugins in this marketplace, newest first. Each plugin ha
 
 ## pr-overview
 
+### 0.1.1 (2026-10-21)
+
+- Changing **Refresh interval (minutes)** in `/config` takes effect at once in an installed copy too. The change's owner is named with its marketplace (`pr-overview@pt-mods`), and only the bare name was recognised.
+
 ### 0.1.0 (2026-10-20)
 
 - `/pr-overview` opens a pane of the open PRs in the session's repo that you're involved in: you opened it, commented, reviewed, were asked to review it by name, were assigned or @-mentioned, or pushed commits to it. Newest activity first.
@@ -13,6 +17,10 @@ Notable changes to the plugins in this marketplace, newest first. Each plugin ha
 - Refreshes every 30 minutes while open: **Refresh interval (minutes)** in `/config`.
 
 ## sidebar
+
+### 0.6.2 (2026-10-21)
+
+- Changing **Billing discount (%)** or **GBP rate (£)** in `/config` shows at once in an installed copy too. The change's owner is named with its marketplace (`sidebar@pt-mods`), and only the bare name was recognised. `/gbp` uses the same check.
 
 ### 0.6.1 (2026-10-20)
 

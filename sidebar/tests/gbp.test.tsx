@@ -69,13 +69,14 @@ const answerEngine = (on: On, opts: { now?: number; store?: Record<string, unkno
 
 // The GBP rate (£) row changed in /config. A session's engine stamps who owns the
 // row and where the change came from; a test's $.config.set takes only key
-// and value, so the stamp is given here.
-const setShowGbp = ($: Engine, value: boolean) =>
+// and value, so the stamp is given here. An installed copy's owner carries
+// its marketplace, as `sidebar@pt-mods`.
+const setShowGbp = ($: Engine, value: boolean, owner = 'sidebar@pt-mods') =>
   $.config.set({
     key: 'sidebar.showGbp',
     value,
     previous: !value,
-    provider: { plugin: 'sidebar', tier: 'user' },
+    provider: { plugin: owner, tier: 'user' },
     origin: { kind: 'composer' },
   } as Parameters<typeof $.config.set>[0])
 
@@ -240,6 +241,25 @@ test('switching it on in /config fetches the rate and shows £ at once', async (
 
   await setShowGbp($, false)
   expect(await ui.find({ type: 'Text', text: /£/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test("a /config change is the sidebar's whether its owner is plain, inline or installed, and not another plugin's", async ($, on) => {
+  stubRate(on, 'ok')
+  const clock = answerEngine(on)
+  await $.session.start(START)
+  await clock.settle()
+  await $.session.measure(measure)
+
+  const ui = await $.ui.mount({ plugin: 'sidebar', surface: 'terminal', ...PANE })
+  await setShowGbp($, true, 'sidebar-extras@pt-mods')
+  expect(await ui.find({ type: 'Text', text: /£/ })).toBeUndefined()
+  for (const owner of ['sidebar', 'sidebar@inline', 'sidebar@pt-mods']) {
+    await setShowGbp($, true, owner)
+    expect(await ui.find({ type: 'Text', text: /£0\.85/ })).toBeDefined()
+    await setShowGbp($, false, owner)
+    expect(await ui.find({ type: 'Text', text: /£/ })).toBeUndefined()
+  }
   await ui.unmount()
 })
 

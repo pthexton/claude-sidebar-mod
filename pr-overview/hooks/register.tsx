@@ -3,6 +3,7 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { Pr } from '../types'
 import { clockTime, firstLine, rowText, toMinutes } from './format'
+import { isOwnedBy } from './owner'
 import { parseReply, queryArgs } from './query'
 import { SEEN_STORE_KEY, isNew, isSameSeen, markSeen, reconcile, toSeen } from './seen'
 
@@ -168,7 +169,7 @@ export const register: Register = (on, options) => {
 
   on('config.set', async ($, e, next) => {
     const set = await next(e)
-    if (set.deny === undefined && e.provider.plugin === 'pr-overview' && e.key.endsWith('.refreshMinutes')) {
+    if (set.deny === undefined && isOwnedBy(e.provider.plugin, 'pr-overview') && e.key.endsWith('.refreshMinutes')) {
       const m = toMinutes(set.value)
       await update($, intervalChange, () => m)
       if (timer !== undefined) startTimer($, m)

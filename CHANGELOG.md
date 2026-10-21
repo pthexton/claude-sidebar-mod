@@ -14,6 +14,11 @@ Notable changes to the plugins in this marketplace, newest first. Each plugin ha
 
 ## sidebar
 
+### 0.6.1 (2026-10-20)
+
+- `/gbp` in `claude -p` says plainly that the setting can't be saved there, instead of passing on Claude Code's error. (#6, kizzsandhu)
+- `/gbp` finds its setting under `claude --plugin-dir`, where the setting's owner is `sidebar@inline`. (#6, kizzsandhu)
+
 ### 0.6.0 (2026-10-19)
 
 - In an Orca terminal, the status line feeds hand their input on to Orca's status line script, so Orca's usage display keeps working without naming Orca's script, which Orca would replace. (#5, kizzsandhu)
